@@ -1,0 +1,7 @@
+{
+  "ENV": "uat",
+  "MAPBOX_TOKEN": "pk.your_uat_mapbox_token_here",
+  "SUPABASE_URL": "https://your-uat-project.supabase.co",
+  "SUPABASE_ANON_KEY": "your_uat_supabase_anon_key_here",
+  "APP_NAME": "PV Map (UAT)"
+}

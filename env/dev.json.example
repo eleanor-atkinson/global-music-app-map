@@ -1,0 +1,7 @@
+{
+  "ENV": "dev",
+  "MAPBOX_TOKEN": "pk.your_dev_mapbox_token_here",
+  "SUPABASE_URL": "https://your-dev-project.supabase.co",
+  "SUPABASE_ANON_KEY": "your_dev_supabase_anon_key_here",
+  "APP_NAME": "PV Map (Dev)"
+}
