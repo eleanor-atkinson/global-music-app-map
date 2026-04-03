@@ -16,9 +16,15 @@ ENV_DIR = env
 # ── Development ──────────────────────────────────────────────────────────────
 
 dev: check-env-dev
+	FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
+	FLUTTER_XCODE_CODE_SIGNING_REQUIRED=NO \
+	FLUTTER_XCODE_AD_HOC_CODE_SIGNING_ALLOWED=YES \
 	$(FLUTTER) run --dart-define-from-file=$(ENV_DIR)/dev.json
 
 dev-ios: check-env-dev
+	FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
+	FLUTTER_XCODE_CODE_SIGNING_REQUIRED=NO \
+	FLUTTER_XCODE_AD_HOC_CODE_SIGNING_ALLOWED=YES \
 	$(FLUTTER) run -d iPhone --dart-define-from-file=$(ENV_DIR)/dev.json
 
 dev-android: check-env-dev
