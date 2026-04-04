@@ -8,18 +8,54 @@
 #   make gen          → run code generation (freezed, riverpod)
 #   make clean        → flutter clean + pod deintegrate
 
-FLUTTER = flutter
-ENV_DIR = env
+FLUTTER       = flutter
+ENV_DIR       = env
+SIMULATOR_UDID = 2796ECEA-8247-4DB3-8DB4-D509DD56E67F
+SIM_APP_PATH  = build/ios/iphonesimulator/Runner.app
+BUNDLE_ID     = com.powerviolence.eleanor.globalMusicMap
 
-.PHONY: dev uat prod build-uat build-prod gen clean setup check-env
+.PHONY: dev uat prod build-uat build-prod gen clean setup check-env sign-sim boot-sim
 
 # ── Development ──────────────────────────────────────────────────────────────
 
-dev: check-env-dev
+# Build → sign → run. Fresh build every time keeps the Dart kernel in sync
+# with --use-application-binary so hot reload works correctly.
+dev: check-env-dev sign-local boot-sim
 	FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
 	FLUTTER_XCODE_CODE_SIGNING_REQUIRED=NO \
-	FLUTTER_XCODE_AD_HOC_CODE_SIGNING_ALLOWED=YES \
-	$(FLUTTER) run --dart-define-from-file=$(ENV_DIR)/dev.json
+	FLUTTER_XCODE_CODE_SIGNING_ALLOWED=NO \
+	$(FLUTTER) build ios --simulator --dart-define-from-file=$(ENV_DIR)/dev.json
+	$(MAKE) sign-sim
+	$(FLUTTER) run -d $(SIMULATOR_UDID) \
+		--use-application-binary $(SIM_APP_PATH) \
+		--dart-define-from-file=$(ENV_DIR)/dev.json
+
+# Ad-hoc sign every dylib/framework then the app bundle itself.
+# Must run after flutter build ios --simulator.
+sign-sim:
+	@echo "→ Signing simulator bundle..."
+	@find $(SIM_APP_PATH) \( -name "*.dylib" -o -name "*.framework" \) \
+		-exec codesign --force --sign - {} \; 2>/dev/null || true
+	@codesign --force --sign - $(SIM_APP_PATH)
+	@echo "   Signing OK"
+
+# Boot the simulator if not already running, then open the Simulator app.
+boot-sim:
+	@xcrun simctl boot $(SIMULATOR_UDID) 2>/dev/null || true
+	@open -a Simulator
+
+# Re-applies manual/local signing to project.pbxproj after Flutter upgrades it.
+sign-local:
+	@python3 -c "\
+import re; \
+f = open('ios/Runner.xcodeproj/project.pbxproj'); c = f.read(); f.close(); \
+c = c.replace('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;'); \
+c = re.sub(r'PROVISIONING_PROFILE_SPECIFIER = \"[^\"]*\";', 'PROVISIONING_PROFILE_SPECIFIER = \"\";', c); \
+c = re.sub(r'CODE_SIGN_IDENTITY = \"[^\"]*\";', 'CODE_SIGN_IDENTITY = \"-\";', c); \
+open('ios/Runner.xcodeproj/project.pbxproj', 'w').write(c); \
+print('→ pbxproj signing: Manual/ad-hoc OK')"
+	@xattr -cr build/ios 2>/dev/null || true
+	@xattr -cr ios/Pods 2>/dev/null || true
 
 dev-ios: check-env-dev
 	FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
