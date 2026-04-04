@@ -36,10 +36,12 @@ CREATE TABLE IF NOT EXISTS concerts (
 CREATE INDEX IF NOT EXISTS concerts_location_idx
   ON concerts USING GIST(location);
 
--- Partial index on upcoming published concerts — the hot path for all queries
+-- Partial index on published concerts — the hot path for all queries
+-- Cannot use NOW() in index predicate (not immutable); date filtering
+-- is handled by the RPC WHERE clause instead
 CREATE INDEX IF NOT EXISTS concerts_upcoming_published_idx
   ON concerts (event_date)
-  WHERE is_published = true AND event_date >= NOW();
+  WHERE is_published = true;
 
 -- ============================================================
 -- updated_at trigger
