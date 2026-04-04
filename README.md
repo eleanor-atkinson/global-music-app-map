@@ -2,12 +2,14 @@
 
 A mobile app for discovering independent concerts — Snap Map style, for live music.
 
+> ⚠️ Early stages — work in progress
+
 > Flutter · Mapbox · Supabase · PostGIS · Riverpod
 
 ---
 
 <!-- Drop a GIF of the app here once you have one -->
-<!-- ![App demo](assets/demo.gif) -->
+![App demo](assets/demo.gif)
 
 ---
 
