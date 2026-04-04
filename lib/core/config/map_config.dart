@@ -2,12 +2,9 @@
 abstract final class MapConfig {
   /// Mapbox Studio style URLs per environment.
   /// Replace with your actual style IDs from studio.mapbox.com
-  static const styleUriDev =
-      'mapbox://styles/your-username/your-dev-style-id';
-  static const styleUriUat =
-      'mapbox://styles/your-username/your-uat-style-id';
-  static const styleUriProd =
-      'mapbox://styles/your-username/your-prod-style-id';
+  static const styleUriDev = 'mapbox://styles/mapbox/dark-v11';
+  static const styleUriUat = 'mapbox://styles/mapbox/dark-v11';
+  static const styleUriProd = 'mapbox://styles/mapbox/dark-v11';
 
   /// Initial camera — centred roughly on the world
   static const initialLng = 0.0;
@@ -19,7 +16,7 @@ abstract final class MapConfig {
   static const markerMinZoom = 1.0;
 
   /// Clustering
-  static const clusterRadius = 50; // pixels
+  static const clusterRadius = 50.0; // pixels
 
   /// GeoJSON source / layer IDs — single source of truth
   static const concertsSourceId = 'concerts-source';
