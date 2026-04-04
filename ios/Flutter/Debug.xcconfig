@@ -1,0 +1,7 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+
+// Use local signing for simulator — no Apple account or provisioning profile needed
+CODE_SIGN_IDENTITY = -
+CODE_SIGNING_REQUIRED = NO
+AD_HOC_CODE_SIGNING_ALLOWED = YES

@@ -1,0 +1,49 @@
+name: global_music_map
+description: A global discovery app for independent concerts.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Map ---
+  mapbox_maps_flutter: ^2.4.0
+
+  # --- State Management ---
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # --- Backend ---
+  supabase_flutter: ^2.5.0
+
+  # --- Image Caching ---
+  cached_network_image: ^3.3.1
+  flutter_cache_manager: ^3.3.1
+
+  # --- Bottom Sheet ---
+  wolt_modal_sheet: ^0.9.0
+
+  # --- Serialization ---
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.3
+  freezed: ^2.5.2
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/images/
