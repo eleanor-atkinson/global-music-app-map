@@ -5,7 +5,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../../../core/config/env.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/extensions/debouncer.dart';
-import '../../../../shared/services/marker_image_service.dart';
 import '../../domain/repositories/i_concert_repository.dart';
 import '../providers/concerts_provider.dart';
 import '../providers/map_controller_provider.dart';
@@ -82,10 +81,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // ── Layer setup ──────────────────────────────────────────────────────────
 
   Future<void> _setupLayers(MapboxMap map) async {
-    // 1. Register the fallback marker image into the style
-    await MarkerImageService(map).registerDefaultMarker();
-
-    // 2. GeoJSON source — clustering enabled, Mapbox handles it natively
+    // 1. GeoJSON source — clustering enabled, Mapbox handles it natively
     await map.style.addSource(
       GeoJsonSource(
         id: MapConfig.concertsSourceId,
@@ -124,16 +120,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
 
-    // 5. Individual marker layer — only shown for non-clustered points
+    // 5. Individual marker layer — circle for non-clustered points
     await map.style.addLayer(
-      SymbolLayer(
+      CircleLayer(
         id: MapConfig.markerLayerId,
         sourceId: MapConfig.concertsSourceId,
         filter: ['!', ['has', 'point_count']],
-        iconImage: MapConfig.fallbackMarkerImage,
-        iconSize: 0.6,
-        iconAllowOverlap: true,
-        iconIgnorePlacement: true,
+        circleColor: 0xFF6366F1,
+        circleRadius: 10.0,
+        circleStrokeWidth: 2.0,
+        circleStrokeColor: 0xFFFFFFFF,
+        circleOpacity: 1.0,
       ),
     );
 
@@ -179,6 +176,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _updateGeoJsonSource(String geoJson) async {
     final map = _map;
     if (map == null) return;
+
+    final hasSource = await map.style.styleSourceExists(MapConfig.concertsSourceId);
+    if (!hasSource) return;
 
     final source = await map.style
         .getSource(MapConfig.concertsSourceId) as GeoJsonSource?;

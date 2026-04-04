@@ -1,58 +1,67 @@
+import 'dart:math';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 import '../../core/config/map_config.dart';
 
-/// Registers marker images into the Mapbox style at runtime.
-///
-/// Phase 3 registers only the fallback marker (a solid indigo circle).
-/// Phase 4 will extend this to fetch + register artist thumbnails.
 class MarkerImageService {
   const MarkerImageService(this._map);
 
   final MapboxMap _map;
 
-  /// Registers a default circular marker used as the fallback icon
-  /// for any concert whose artist thumbnail hasn't loaded yet.
   Future<void> registerDefaultMarker() async {
-    final bytes = await _renderDefaultMarker(size: 48);
+    const size = 48;
+    final bytes = _buildCircleRgba(
+      size: size,
+      fillR: 99, fillG: 102, fillB: 241,   // indigo #6366F1
+      borderR: 255, borderG: 255, borderB: 255,
+      borderWidth: 3,
+    );
     await _map.style.addStyleImage(
       MapConfig.fallbackMarkerImage,
       1.0,
-      MbxImage(width: 48, height: 48, data: bytes),
-      false, // not SDF — we use a pre-coloured bitmap
+      MbxImage(width: size, height: size, data: bytes),
+      false,
       [],
       [],
       null,
     );
   }
 
-  /// Paints a 48×48 indigo filled circle with a white border.
-  Future<Uint8List> _renderDefaultMarker({required int size}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final center = Offset(size / 2, size / 2);
-    final radius = size / 2;
+  /// Generates raw RGBA bytes for an anti-aliased filled circle.
+  /// Avoids the Flutter rendering pipeline which can produce mismatched
+  /// pixel formats that Mapbox rejects at runtime.
+  static Uint8List _buildCircleRgba({
+    required int size,
+    required int fillR, required int fillG, required int fillB,
+    required int borderR, required int borderG, required int borderB,
+    required int borderWidth,
+  }) {
+    final bytes = Uint8List(size * size * 4);
+    final center = (size - 1) / 2;
+    final outerR = center;
+    final innerR = outerR - borderWidth;
 
-    // White border
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()..color = Colors.white,
-    );
-    // Indigo fill
-    canvas.drawCircle(
-      center,
-      radius - 3,
-      Paint()..color = const Color(0xFF6366F1),
-    );
+    for (var y = 0; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        final dist = sqrt((x - center) * (x - center) + (y - center) * (y - center));
+        final idx = (y * size + x) * 4;
 
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size, size);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    return byteData!.buffer.asUint8List();
+        if (dist <= innerR) {
+          bytes[idx]     = fillR;
+          bytes[idx + 1] = fillG;
+          bytes[idx + 2] = fillB;
+          bytes[idx + 3] = 255;
+        } else if (dist <= outerR) {
+          bytes[idx]     = borderR;
+          bytes[idx + 1] = borderG;
+          bytes[idx + 2] = borderB;
+          bytes[idx + 3] = 255;
+        }
+        // else: transparent (already 0)
+      }
+    }
+    return bytes;
   }
 }
