@@ -8,6 +8,8 @@ import '../../../../core/extensions/debouncer.dart';
 import '../../domain/repositories/i_concert_repository.dart';
 import '../providers/concerts_provider.dart';
 import '../providers/map_controller_provider.dart';
+import '../providers/selected_concert_provider.dart';
+import '../widgets/concert_detail_sheet.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -81,7 +83,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // ── Layer setup ──────────────────────────────────────────────────────────
 
   Future<void> _setupLayers(MapboxMap map) async {
-    // 1. GeoJSON source — clustering enabled, Mapbox handles it natively
     await map.style.addSource(
       GeoJsonSource(
         id: MapConfig.concertsSourceId,
@@ -92,13 +93,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
 
-    // 3. Cluster circle layer — shown when point_count property is present
     await map.style.addLayer(
       CircleLayer(
         id: MapConfig.clusterLayerId,
         sourceId: MapConfig.concertsSourceId,
         filter: ['has', 'point_count'],
-        circleColor: 0xFF6366F1,  // indigo
+        circleColor: 0xFF6366F1,
         circleRadius: 22.0,
         circleStrokeWidth: 2.0,
         circleStrokeColor: 0xFFFFFFFF,
@@ -106,7 +106,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
 
-    // 4. Cluster count label layer
     await map.style.addLayer(
       SymbolLayer(
         id: MapConfig.clusterCountLayerId,
@@ -120,7 +119,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
 
-    // 5. Individual marker layer — circle for non-clustered points
     await map.style.addLayer(
       CircleLayer(
         id: MapConfig.markerLayerId,
@@ -134,7 +132,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
 
-    // 6. Trigger an initial fetch for the default camera position
     await _fetchForCurrentViewport();
   }
 
@@ -170,9 +167,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         );
   }
 
+  // ── Tap handler ──────────────────────────────────────────────────────────
+
+  Future<void> _onMapTap(MapContentGestureContext context) async {
+    final map = _map;
+    if (map == null) return;
+
+    // Query rendered features within a small box around the tap point
+    final x = context.touchPosition.x;
+    final y = context.touchPosition.y;
+    const hitSlop = 20.0;
+
+    final features = await map.queryRenderedFeatures(
+      RenderedQueryGeometry.fromScreenBox(
+        ScreenBox(
+          min: ScreenCoordinate(x: x - hitSlop, y: y - hitSlop),
+          max: ScreenCoordinate(x: x + hitSlop, y: y + hitSlop),
+        ),
+      ),
+      RenderedQueryOptions(
+        layerIds: [MapConfig.markerLayerId],
+      ),
+    );
+
+    if (features.isEmpty) {
+      // Tapped empty map — dismiss sheet
+      ref.read(selectedConcertProvider.notifier).state = null;
+      return;
+    }
+
+    // Extract the concert id from the tapped feature's properties
+    final props = features.first?.queriedFeature.feature['properties']
+        as Map<Object?, Object?>?;
+    final id = props?['id'] as String?;
+    if (id == null) return;
+
+    // Look up the full Concert from the in-memory list
+    final result = ref.read(concertsProvider).valueOrNull;
+    final concert = result?.concerts.where((c) => c.id == id).firstOrNull;
+    if (concert == null) return;
+
+    ref.read(selectedConcertProvider.notifier).state = concert;
+  }
+
   // ── React to new concert data ────────────────────────────────────────────
 
-  /// Called by the listener below when [concertsProvider] emits new data.
   Future<void> _updateGeoJsonSource(String geoJson) async {
     final map = _map;
     if (map == null) return;
@@ -189,8 +228,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for new GeoJSON and push it into the source.
-    // Using listen (not watch) avoids rebuilding the whole widget tree.
     ref.listen(concertsProvider, (_, next) {
       next.whenData((result) {
         if (result != null) _updateGeoJsonSource(result.geoJson);
@@ -207,9 +244,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             cameraOptions: _initialCamera,
             onMapCreated: _onMapCreated,
             onCameraChangeListener: _onCameraChanged,
+            onTapListener: _onMapTap,
           ),
           _LoadingIndicator(),
           _ErrorBanner(),
+          const ConcertDetailSheet(),
         ],
       ),
     );

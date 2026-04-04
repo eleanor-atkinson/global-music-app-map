@@ -12,7 +12,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: Env.appName,
-      debugShowCheckedModeBanner: !Env.isProd,
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       home: const MapScreen(),
     );
