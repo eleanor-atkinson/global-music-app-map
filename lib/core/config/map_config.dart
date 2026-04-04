@@ -19,7 +19,7 @@ abstract final class MapConfig {
   static const markerMinZoom = 1.0;
 
   /// Clustering
-  static const clusterRadius = 50; // pixels
+  static const clusterRadius = 50.0; // pixels
 
   /// GeoJSON source / layer IDs — single source of truth
   static const concertsSourceId = 'concerts-source';

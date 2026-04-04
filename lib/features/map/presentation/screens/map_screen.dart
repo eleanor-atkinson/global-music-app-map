@@ -91,8 +91,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         id: MapConfig.concertsSourceId,
         data: '{"type":"FeatureCollection","features":[]}',
         cluster: true,
-        clusterMaxZoom: MapConfig.clusterMaxZoom.toInt(),
-        clusterRadius: MapConfig.clusterRadius,
+        clusterMaxZoom: MapConfig.clusterMaxZoom,
+        clusterRadius: MapConfig.clusterRadius.toDouble(),
       ),
     );
 
@@ -151,9 +151,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final map = _map;
     if (map == null) return;
 
-    final bounds = await map.coordinateBoundsForCamera(
-      await map.getCameraState(),
+    final cameraState = await map.getCameraState();
+    final cameraOptions = CameraOptions(
+      center: cameraState.center,
+      zoom: cameraState.zoom,
+      bearing: cameraState.bearing,
+      pitch: cameraState.pitch,
     );
+    final bounds = await map.coordinateBoundsForCamera(cameraOptions);
 
     final sw = bounds.southwest.coordinates;
     final ne = bounds.northeast.coordinates;

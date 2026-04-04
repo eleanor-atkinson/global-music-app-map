@@ -15,11 +15,24 @@ ENV_DIR = env
 
 # ── Development ──────────────────────────────────────────────────────────────
 
-dev: check-env-dev
+dev: check-env-dev sign-local
 	FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
 	FLUTTER_XCODE_CODE_SIGNING_REQUIRED=NO \
 	FLUTTER_XCODE_AD_HOC_CODE_SIGNING_ALLOWED=YES \
 	$(FLUTTER) run --dart-define-from-file=$(ENV_DIR)/dev.json
+
+# Re-applies manual/local signing to project.pbxproj after Flutter upgrades it.
+# Flutter's project upgrade step resets signing — this restores it before each build.
+sign-local:
+	@python3 -c "\
+import re, sys; \
+f = open('ios/Runner.xcodeproj/project.pbxproj'); c = f.read(); f.close(); \
+c = c.replace('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;'); \
+c = re.sub(r'PROVISIONING_PROFILE_SPECIFIER = \"[^\"]*\";', 'PROVISIONING_PROFILE_SPECIFIER = \"\";', c); \
+open('ios/Runner.xcodeproj/project.pbxproj', 'w').write(c); \
+print('Signing: manual/local OK')"
+	@xattr -cr build/ios 2>/dev/null || true
+	@xattr -cr ios/Pods 2>/dev/null || true
 
 dev-ios: check-env-dev
 	FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
