@@ -5,6 +5,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../../../core/config/env.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/extensions/debouncer.dart';
+import '../../../../core/services/location_service.dart';
 import '../../domain/repositories/i_concert_repository.dart';
 import '../providers/concerts_provider.dart';
 import '../providers/map_controller_provider.dart';
@@ -78,6 +79,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ]);
 
     await _setupLayers(map);
+    await _flyToUserLocation(map);
+  }
+
+  Future<void> _flyToUserLocation(MapboxMap map) async {
+    final position = await LocationService.getCurrentPosition();
+    if (position == null) return;
+
+    await map.flyTo(
+      CameraOptions(
+        center: Point(
+          coordinates: Position(position.longitude, position.latitude),
+        ),
+        zoom: 11.0,
+      ),
+      MapAnimationOptions(duration: 1800),
+    );
+  }
+
+  Future<void> _locateMe() async {
+    final map = _map;
+    if (map == null) return;
+    await _flyToUserLocation(map);
   }
 
   // ── Layer setup ──────────────────────────────────────────────────────────
@@ -249,6 +272,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _LoadingIndicator(),
           _ErrorBanner(),
           const ConcertDetailSheet(),
+          _LocateMeButton(onTap: _locateMe),
         ],
       ),
     );
@@ -274,6 +298,53 @@ class _LoadingIndicator extends ConsumerWidget {
           child: CircularProgressIndicator(
             strokeWidth: 2,
             color: Color(0xFF6366F1),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LocateMeButton extends StatelessWidget {
+  const _LocateMeButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 16,
+      right: 16,
+      child: SafeArea(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF16161F),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.my_location, color: Color(0xFF6366F1), size: 18),
+                SizedBox(width: 6),
+                Text(
+                  'Me',
+                  style: TextStyle(
+                    color: Color(0xFF6366F1),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
